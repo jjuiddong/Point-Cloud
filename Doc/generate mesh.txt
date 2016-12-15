@@ -1,0 +1,24 @@
+
+들로네 삼각분할
+	 Delaunay triangulation
+
+보로노이 다이어그램
+	Voronoi diagram
+
+
+http://darkpgmr.tistory.com/96
+
+Learning OpenCV 책에도 나옴.
+
+
+들로네 삼각화
+http://day-think.tumblr.com/post/68552742287/%EB%93%A4%EB%A1%9C%EB%84%A4-%EC%82%BC%EA%B0%81%ED%99%94
+
+들로네 삼각화 오픈소스
+https://github.com/Bl4ckb0ne/delaunay-triangulation
+
+들로네 삼각화 그림으로 표현 
+http://www.geom.uiuc.edu/~samuelp/del_project.html
+
+
+
