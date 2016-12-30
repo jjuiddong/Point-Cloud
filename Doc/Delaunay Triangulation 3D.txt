@@ -1,0 +1,25 @@
+
+Terahedron, 사면체
+
+
+
+https://github.com/Bl4ckb0ne/delaunay-triangulation
+
+
+벡터를 이용한 Tetrahedron 외접원
+http://math.stackexchange.com/questions/1858388/tetrahedron-signed-distance-between-circumcenter-and-face
+
+
+How do I find the circumcenter of a triangle in 3D? 
+http://gamedev.stackexchange.com/questions/60630/how-do-i-find-the-circumcenter-of-a-triangle-in-3d
+
+
+Meshkit 1.0  tetrahedron 외접원
+http://www.mcs.anl.gov/~fathom/meshkit-docs/html/circumcenter_8cpp_source.html
+
+
+Barycentric coordinates of a tetrahedron
+http://stackoverflow.com/questions/38545520/barycentric-coordinates-of-a-tetrahedron
+
+
+

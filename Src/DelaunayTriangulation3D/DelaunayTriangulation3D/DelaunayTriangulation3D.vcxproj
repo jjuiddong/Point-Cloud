@@ -145,19 +145,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="delaunay.cpp" />
+    <ClCompile Include="CircumCenter.cpp" />
+    <ClCompile Include="Delaunay3D.cpp" />
+    <ClCompile Include="GeomPredicates.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="RenderTetrahedron.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="triangle.cpp" />
+    <ClCompile Include="Tetrahedron.cpp" />
+    <ClCompile Include="triangle3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="delaunay.h" />
-    <ClInclude Include="edge.h" />
+    <ClInclude Include="CircumCenter.h" />
+    <ClInclude Include="Delaunay3D.h" />
+    <ClInclude Include="GeomPredicates.h" />
+    <ClInclude Include="RenderTetrahedron.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="triangle.h" />
-    <ClInclude Include="vector2.h" />
+    <ClInclude Include="Tetrahedron.h" />
+    <ClInclude Include="triangle3.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Common\Common\Common.vcxproj">

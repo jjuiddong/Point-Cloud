@@ -1,8 +1,10 @@
 
 #include "stdafx.h"
+#include "Delaunay3D.h"
+#include "RenderTetrahedron.h"
 
 using namespace graphic;
-using namespace delaunay;
+//using namespace delaunay;
 
 
 class cViewer : public framework::cGameMain
@@ -21,13 +23,19 @@ public:
 private:
 	void UpdateDelaunayTriangles();
 
-	vector<Vector3> points;
-	Delaunay triangulation;
-	vector<Triangle2> triangles;
-	vector<Edge> edges;
-
+	vector<Vector3> m_points;
+	delaunay3d::cDelaunay3D m_delaunay;
+	vector<delaunay3d::cRenderTetrahedron*> m_renderTetrahedrones;
+	
+	delaunay3d::cTetrahedron m_tetra;
+	delaunay3d::cRenderTetrahedron m_renderTetra;
 	graphic::cVertexBuffer m_vtxBuff;
-	graphic::cIndexBuffer m_idxBuff;
+
+	bool m_isRenderVertex;
+	bool m_isRenderTerahedron;
+	bool m_isRenderNormal;
+	bool m_isRenderEdge;
+	int m_renderIdx;
 
 	POINT m_curPos;
 	bool m_LButtonDown;
@@ -44,8 +52,13 @@ const int WINSIZE_X = 800;
 const int WINSIZE_Y = 600;
 
 cViewer::cViewer()
+	: m_isRenderVertex(false)
+	, m_isRenderTerahedron(false)
+	, m_isRenderNormal(false)
+	, m_isRenderEdge(true)
+	, m_renderIdx(0)
 {
-	m_windowName = L"Delaunay Triangulations";
+	m_windowName = L"Delaunay Triangulations 3D";
 	const RECT r = { 0, 0, WINSIZE_X, WINSIZE_Y };
 	m_windowRect = r;
 	m_LButtonDown = false;
@@ -55,6 +68,10 @@ cViewer::cViewer()
 
 cViewer::~cViewer()
 {
+	for (auto &p : m_renderTetrahedrones)
+		delete p;
+	m_renderTetrahedrones.clear();
+
 	graphic::ReleaseRenderer();
 }
 
@@ -92,52 +109,45 @@ bool cViewer::OnInit()
 void cViewer::UpdateDelaunayTriangles()
 {
 	srand((unsigned int)time(NULL));
-	float numberPoints = roundf(RandomFloat(4, 40));
+	//float numberPoints = roundf(RandomFloat(4, 40));
+	//int numberPoints = (int)roundf(RandomFloat(8, 8));
+	int numberPoints = (int)roundf(RandomFloat(8, 16));
 
-	triangulation.clear();
-	points.clear();
+	m_points.clear();
 	for (int i = 0; i < numberPoints; i++)
-		points.push_back(Vector3(RandomFloat(0, 800), RandomFloat(0, 600), RandomFloat(0, 600)));
+		m_points.push_back(Vector3(RandomFloat(0, 10), RandomFloat(0, 10), RandomFloat(0, 10)));
+		//points.push_back(Vector3(RandomFloat(0, 800), RandomFloat(0, 600), RandomFloat(0, 600)));
 
-	triangles = triangulation.triangulate(points);
-	edges = triangulation.getEdges();
-
-	m_vtxBuff.Create(m_renderer, (int)numberPoints, sizeof(Vector3), D3DFVF_XYZ);
-	if (Vector3 *p = (Vector3*)m_vtxBuff.Lock())
+	// Vertex List
+	m_vtxBuff.Create(m_renderer, numberPoints, sizeof(graphic::sVertexPoint), graphic::sVertexPoint::FVF);
+	if (graphic::sVertexPoint *p = (graphic::sVertexPoint*)m_vtxBuff.Lock())
 	{
-		for (auto &pt : points)
-			*p++ = Vector3(pt.x, pt.y, 0);
-	}
-	m_vtxBuff.Unlock();
-
-	m_idxBuff.Create(m_renderer, triangles.size());
-	if (WORD *i = (WORD*)m_idxBuff.Lock())
-	{
-		for (auto &tr : triangles)
+		for (auto pt : m_points)
 		{
-			int cnt = 0;
-			for (unsigned int k = 0; (cnt < 3) && (k < points.size()); ++k)
-			{
-				if (points[k] == tr.p1)
-				{
-					*i = (WORD)k;
-					++cnt;
-				}
-				else if (points[k] == tr.p2)
-				{
-					*(i + 1) = (WORD)k;
-					++cnt;
-				}
-				else if (points[k] == tr.p3)
-				{
-					*(i + 2) = (WORD)k;
-					++cnt;
-				}
-			}
-			i += 3;
+			p->p = pt;
+			p->c = D3DXCOLOR(1.0f, 0, 0,0);
+			p->size = 1;
+			++p;
 		}
+		m_vtxBuff.Unlock();
 	}
-	m_idxBuff.Unlock();
+
+	//m_tetra.Create(Vector3(-5, 0, 0),Vector3(5, 0, 0),Vector3(0, 0, 5),Vector3(0, 5, 2.5f));
+	//m_renderTetra.Init(m_renderer, m_tetra);
+
+	m_delaunay.Triangulate(m_points);
+
+
+	for (auto &p : m_renderTetrahedrones)
+		delete p;
+	m_renderTetrahedrones.clear();
+
+	for (auto &tet : m_delaunay._tetrahedrones)
+	{
+		delaunay3d::cRenderTetrahedron *renderTet = new delaunay3d::cRenderTetrahedron();
+		renderTet->Init(m_renderer, tet);
+		m_renderTetrahedrones.push_back(renderTet);
+	}
 
 }
 
@@ -148,6 +158,21 @@ void cViewer::OnUpdate(const float elapseT)
 	incT += elapseT;
 	if (incT < 0.033f)
 		return;
+
+	// keyboard
+	const float vel = 100*elapseT;
+	if (GetAsyncKeyState('W'))
+		GetMainCamera()->MoveFront(vel);
+	else if (GetAsyncKeyState('A'))
+		GetMainCamera()->MoveRight(-vel);
+	else if (GetAsyncKeyState('D'))
+		GetMainCamera()->MoveRight(vel);
+	else if (GetAsyncKeyState('S'))
+		GetMainCamera()->MoveFront(-vel);
+	else if (GetAsyncKeyState('E'))
+		GetMainCamera()->MoveUp(vel);
+	else if (GetAsyncKeyState('C'))
+		GetMainCamera()->MoveUp(-vel);
 
 	GetMainCamera()->Update();
 
@@ -168,12 +193,21 @@ void cViewer::OnRender(const float elapseT)
 		m_renderer.RenderGrid();
 		m_renderer.RenderAxis();
 
-		m_vtxBuff.Bind(m_renderer);
-		m_idxBuff.Bind(m_renderer);
-		m_renderer.GetDevice()->DrawIndexedPrimitive(
-			D3DPT_TRIANGLELIST, 0, 0, m_vtxBuff.GetVertexCount(), 0,
-			m_idxBuff.GetFaceCount());
+		if (m_isRenderTerahedron)
+		{
+			if ((int)m_renderTetrahedrones.size() > m_renderIdx)
+				m_renderTetrahedrones[m_renderIdx]->Render(m_renderer, m_isRenderNormal, m_isRenderEdge);
+		}
+		else
+		{
+			for (auto p : m_renderTetrahedrones)
+				p->Render(m_renderer, m_isRenderNormal, m_isRenderEdge);
+		}
 
+		if (m_isRenderVertex)
+			m_vtxBuff.RenderPointList2(m_renderer);
+
+		m_renderTetra.Render(m_renderer);
 		m_renderer.RenderFPS();
 
 		//랜더링 끝
@@ -232,6 +266,18 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 			flag = !flag;
 		}
 		break;
+
+		case '1': m_isRenderVertex = !m_isRenderVertex; break;
+		case '2': m_isRenderTerahedron = !m_isRenderTerahedron; break;
+		case '3': m_isRenderNormal = !m_isRenderNormal; break;
+		case '4': m_isRenderEdge = !m_isRenderEdge; break;
+			break;
+
+		case VK_RETURN:
+			++m_renderIdx;
+			if ((int)m_renderTetrahedrones.size() <= m_renderIdx)
+				m_renderIdx = 0;
+			break;
 
 		case VK_LEFT: m_boxPos.x -= 10.f; break;
 		case VK_RIGHT: m_boxPos.x += 10.f; break;
