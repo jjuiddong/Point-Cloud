@@ -1,0 +1,2 @@
+tri count = 11039tri count = 4641tri count = 4155
+tri count = 4247

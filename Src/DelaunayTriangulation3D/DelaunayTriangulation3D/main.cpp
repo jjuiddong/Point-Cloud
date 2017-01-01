@@ -1,10 +1,13 @@
+//
+// 2017-01-01, jjuiddong
+// Delaunay Triangulations 3D
+//
 
 #include "stdafx.h"
 #include "Delaunay3D.h"
 #include "RenderTetrahedron.h"
 
 using namespace graphic;
-//using namespace delaunay;
 
 
 class cViewer : public framework::cGameMain
@@ -22,6 +25,7 @@ public:
 
 private:
 	void UpdateDelaunayTriangles();
+
 
 	vector<Vector3> m_points;
 	delaunay3d::cDelaunay3D m_delaunay;
@@ -41,9 +45,6 @@ private:
 	bool m_LButtonDown;
 	bool m_RButtonDown;
 	bool m_MButtonDown;
-	Matrix44 m_rotateTm;
-
-	Vector3 m_boxPos;
 };
 
 INIT_FRAMEWORK(cViewer);
@@ -84,12 +85,8 @@ float RandomFloat(float a, float b) {
 
 bool cViewer::OnInit()
 {
-	DragAcceptFiles(m_hWnd, TRUE);
-
-	cResourceManager::Get()->SetMediaDirectory("./media/");
-
 	GetMainCamera()->Init(&m_renderer);
-	GetMainCamera()->SetCamera(Vector3(10, 10, -10), Vector3(0, 0, 0), Vector3(0, 1, 0));
+	GetMainCamera()->SetCamera(Vector3(30, 30, -30), Vector3(0, 0, 0), Vector3(0, 1, 0));
 	GetMainCamera()->SetProjection(D3DX_PI / 4.f, (float)WINSIZE_X / (float)WINSIZE_Y, 1.f, 10000.0f);
 
 	GetMainLight().Init(cLight::LIGHT_DIRECTIONAL);
@@ -109,14 +106,11 @@ bool cViewer::OnInit()
 void cViewer::UpdateDelaunayTriangles()
 {
 	srand((unsigned int)time(NULL));
-	//float numberPoints = roundf(RandomFloat(4, 40));
-	//int numberPoints = (int)roundf(RandomFloat(8, 8));
-	int numberPoints = (int)roundf(RandomFloat(8, 16));
+	int numberPoints = (int)roundf(RandomFloat(8, 32));
 
 	m_points.clear();
 	for (int i = 0; i < numberPoints; i++)
-		m_points.push_back(Vector3(RandomFloat(0, 10), RandomFloat(0, 10), RandomFloat(0, 10)));
-		//points.push_back(Vector3(RandomFloat(0, 800), RandomFloat(0, 600), RandomFloat(0, 600)));
+		m_points.push_back(Vector3(RandomFloat(-10, 10), RandomFloat(-10, 10), RandomFloat(-10, 10)));
 
 	// Vertex List
 	m_vtxBuff.Create(m_renderer, numberPoints, sizeof(graphic::sVertexPoint), graphic::sVertexPoint::FVF);
@@ -132,23 +126,21 @@ void cViewer::UpdateDelaunayTriangles()
 		m_vtxBuff.Unlock();
 	}
 
-	//m_tetra.Create(Vector3(-5, 0, 0),Vector3(5, 0, 0),Vector3(0, 0, 5),Vector3(0, 5, 2.5f));
-	//m_renderTetra.Init(m_renderer, m_tetra);
-
 	m_delaunay.Triangulate(m_points);
 
-
+	// Create Rendering Tetrahedron
 	for (auto &p : m_renderTetrahedrones)
 		delete p;
 	m_renderTetrahedrones.clear();
 
-	for (auto &tet : m_delaunay._tetrahedrones)
+	for (auto &tet : m_delaunay.m_tetrahedrones)
 	{
 		delaunay3d::cRenderTetrahedron *renderTet = new delaunay3d::cRenderTetrahedron();
 		renderTet->Init(m_renderer, tet);
 		m_renderTetrahedrones.push_back(renderTet);
 	}
 
+	common::dbg::Log("tri count = %d\n", m_delaunay.m_tetrahedrones.size());
 }
 
 
@@ -187,9 +179,6 @@ void cViewer::OnRender(const float elapseT)
 	{
 		m_renderer.GetDevice()->BeginScene();
 
-		m_renderer.GetDevice()->SetRenderState(D3DRS_ZENABLE, 0);
-		m_renderer.GetDevice()->SetRenderState(D3DRS_ZENABLE, 1);
-
 		m_renderer.RenderGrid();
 		m_renderer.RenderAxis();
 
@@ -210,7 +199,6 @@ void cViewer::OnRender(const float elapseT)
 		m_renderTetra.Render(m_renderer);
 		m_renderer.RenderFPS();
 
-		//랜더링 끝
 		m_renderer.GetDevice()->EndScene();
 		m_renderer.GetDevice()->Present(NULL, NULL, NULL, NULL);
 	}
@@ -226,17 +214,6 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-	case WM_DROPFILES:
-	{
-		HDROP hdrop = (HDROP)wParam;
-		char filePath[MAX_PATH];
-		const UINT size = DragQueryFileA(hdrop, 0, filePath, sizeof(filePath));
-		if (size == 0)
-			return;
-		//Read3dFile(filePath);
-	}
-	break;
-
 	case WM_MOUSEWHEEL:
 	{
 		int fwKeys = GET_KEYSTATE_WPARAM(wParam);
@@ -273,16 +250,17 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 		case '4': m_isRenderEdge = !m_isRenderEdge; break;
 			break;
 
-		case VK_RETURN:
+		case VK_LEFT:
+			--m_renderIdx;
+			if (0 > m_renderIdx)
+				m_renderIdx = (int)m_renderTetrahedrones.size()-1;
+			break;
+
+		case VK_RIGHT:
 			++m_renderIdx;
 			if ((int)m_renderTetrahedrones.size() <= m_renderIdx)
 				m_renderIdx = 0;
 			break;
-
-		case VK_LEFT: m_boxPos.x -= 10.f; break;
-		case VK_RIGHT: m_boxPos.x += 10.f; break;
-		case VK_UP: m_boxPos.z += 10.f; break;
-		case VK_DOWN: m_boxPos.z -= 10.f; break;
 		}
 		break;
 

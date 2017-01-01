@@ -21,10 +21,10 @@ public:
 private:
 	void UpdateDelaunayTriangles();
 
-	vector<Vec2f> points;
-	Delaunay triangulation;
-	vector<Triangle2> triangles;
-	vector<Edge> edges;
+	vector<Vec2f> m_points;
+	Delaunay m_triangulation;
+	vector<Triangle2> m_triangles;
+	vector<Edge> m_edges;
 
 	graphic::cVertexBuffer m_vtxBuff;
 	graphic::cIndexBuffer m_idxBuff;
@@ -33,9 +33,6 @@ private:
 	bool m_LButtonDown;
 	bool m_RButtonDown;
 	bool m_MButtonDown;
-	Matrix44 m_rotateTm;
-
-	Vector3 m_boxPos;
 };
 
 INIT_FRAMEWORK(cViewer);
@@ -67,12 +64,8 @@ float RandomFloat(float a, float b) {
 
 bool cViewer::OnInit()
 {
-	DragAcceptFiles(m_hWnd, TRUE);
-
-	cResourceManager::Get()->SetMediaDirectory("./media/");
-
 	GetMainCamera()->Init(&m_renderer);
-	GetMainCamera()->SetCamera(Vector3(10, 10, -10), Vector3(0, 0, 0), Vector3(0, 1, 0));
+	GetMainCamera()->SetCamera(Vector3(30, 30, -30), Vector3(0, 0, 0), Vector3(0, 1, 0));
 	GetMainCamera()->SetProjection(D3DX_PI / 4.f, (float)WINSIZE_X / (float)WINSIZE_Y, 1.f, 10000.0f);
 
 	GetMainLight().Init(cLight::LIGHT_DIRECTIONAL);
@@ -94,41 +87,41 @@ void cViewer::UpdateDelaunayTriangles()
 	srand((unsigned int)time(NULL));
 	float numberPoints = roundf(RandomFloat(4, 40));
 
-	triangulation.clear();
-	points.clear();
+	m_triangulation.clear();
+	m_points.clear();
 	for (int i = 0; i < numberPoints; i++)
-		points.push_back(Vec2f(RandomFloat(0, 800), RandomFloat(0, 600)));
+		m_points.push_back(Vec2f(RandomFloat(-10, 10), RandomFloat(-10, 10)));
 
-	triangles = triangulation.triangulate(points);
-	edges = triangulation.getEdges();
+	m_triangles = m_triangulation.triangulate(m_points);
+	m_edges = m_triangulation.getEdges();
 
 	m_vtxBuff.Create(m_renderer, (int)numberPoints, sizeof(Vector3), D3DFVF_XYZ);
 	if (Vector3 *p = (Vector3*)m_vtxBuff.Lock())
 	{
-		for (auto &pt : points)
+		for (auto &pt : m_points)
 			*p++ = Vector3(pt.x, pt.y, 0);
 	}
 	m_vtxBuff.Unlock();
 
-	m_idxBuff.Create(m_renderer, triangles.size());
+	m_idxBuff.Create(m_renderer, m_triangles.size());
 	if (WORD *i = (WORD*)m_idxBuff.Lock())
 	{
-		for (auto &tr : triangles)
+		for (auto &tr : m_triangles)
 		{
 			int cnt = 0;
-			for (unsigned int k = 0; (cnt < 3) && (k < points.size()); ++k)
+			for (unsigned int k = 0; (cnt < 3) && (k < m_points.size()); ++k)
 			{
-				if (points[k] == tr.p1)
+				if (m_points[k] == tr.p1)
 				{
 					*i = (WORD)k;
 					++cnt;
 				}
-				else if (points[k] == tr.p2)
+				else if (m_points[k] == tr.p2)
 				{
 					*(i + 1) = (WORD)k;
 					++cnt;
 				}
-				else if (points[k] == tr.p3)
+				else if (m_points[k] == tr.p3)
 				{
 					*(i + 2) = (WORD)k;
 					++cnt;
@@ -138,7 +131,6 @@ void cViewer::UpdateDelaunayTriangles()
 		}
 	}
 	m_idxBuff.Unlock();
-
 }
 
 
@@ -148,6 +140,21 @@ void cViewer::OnUpdate(const float elapseT)
 	incT += elapseT;
 	if (incT < 0.033f)
 		return;
+
+	// keyboard
+	const float vel = 100 * elapseT;
+	if (GetAsyncKeyState('W'))
+		GetMainCamera()->MoveFront(vel);
+	else if (GetAsyncKeyState('A'))
+		GetMainCamera()->MoveRight(-vel);
+	else if (GetAsyncKeyState('D'))
+		GetMainCamera()->MoveRight(vel);
+	else if (GetAsyncKeyState('S'))
+		GetMainCamera()->MoveFront(-vel);
+	else if (GetAsyncKeyState('E'))
+		GetMainCamera()->MoveUp(vel);
+	else if (GetAsyncKeyState('C'))
+		GetMainCamera()->MoveUp(-vel);
 
 	GetMainCamera()->Update();
 
@@ -162,9 +169,6 @@ void cViewer::OnRender(const float elapseT)
 	{
 		m_renderer.GetDevice()->BeginScene();
 
-		m_renderer.GetDevice()->SetRenderState(D3DRS_ZENABLE, 0);
-		m_renderer.GetDevice()->SetRenderState(D3DRS_ZENABLE, 1);
-
 		m_renderer.RenderGrid();
 		m_renderer.RenderAxis();
 
@@ -176,7 +180,6 @@ void cViewer::OnRender(const float elapseT)
 
 		m_renderer.RenderFPS();
 
-		//랜더링 끝
 		m_renderer.GetDevice()->EndScene();
 		m_renderer.GetDevice()->Present(NULL, NULL, NULL, NULL);
 	}
@@ -192,17 +195,6 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-	case WM_DROPFILES:
-	{
-		HDROP hdrop = (HDROP)wParam;
-		char filePath[MAX_PATH];
-		const UINT size = DragQueryFileA(hdrop, 0, filePath, sizeof(filePath));
-		if (size == 0)
-			return;
-		//Read3dFile(filePath);
-	}
-	break;
-
 	case WM_MOUSEWHEEL:
 	{
 		int fwKeys = GET_KEYSTATE_WPARAM(wParam);
@@ -232,11 +224,6 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 			flag = !flag;
 		}
 		break;
-
-		case VK_LEFT: m_boxPos.x -= 10.f; break;
-		case VK_RIGHT: m_boxPos.x += 10.f; break;
-		case VK_UP: m_boxPos.z += 10.f; break;
-		case VK_DOWN: m_boxPos.z -= 10.f; break;
 		}
 		break;
 
