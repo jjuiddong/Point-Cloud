@@ -47,7 +47,8 @@ void cDelaunay3D::Triangulate(std::vector<Vector3> &vertices)
 	const int expandVtxIdx = m_vertices.size() - 4;
 
 	m_tetrahedrones.clear();
-	m_tetrahedrones.push_back(cTetrahedron(&m_vertices, expandVtxIdx, expandVtxIdx+1, expandVtxIdx+2, expandVtxIdx+3));
+	cTetrahedron bigTetra(&m_vertices, expandVtxIdx, expandVtxIdx + 1, expandVtxIdx + 2, expandVtxIdx + 3);
+	m_tetrahedrones.push_back(bigTetra);
 	
 	for (int k = 0; k < (int)vertices.size(); ++k)
 	{
@@ -60,12 +61,18 @@ void cDelaunay3D::Triangulate(std::vector<Vector3> &vertices)
 			{
 				for (int k = 0; k < 4; ++k)
 				{
-					// 중복이 아닐때 만, 추가
+					// if exist same triangle, remove that
 					if (polygon.end() == find(polygon.begin(), polygon.end(), m_tetrahedrones[i].m_tr[k]))
+					{
 						polygon.push_back(m_tetrahedrones[i].m_tr[k]);
+					}
+					else
+					{
+						common::popvector2(polygon, m_tetrahedrones[i].m_tr[k]);
+					}
 				}
 
-				common::rotatepopvector(m_tetrahedrones, i);
+				common::popvector(m_tetrahedrones, i);
 			}
 		}
 

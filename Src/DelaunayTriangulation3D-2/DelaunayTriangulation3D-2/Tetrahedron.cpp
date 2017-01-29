@@ -79,14 +79,27 @@ void cTetrahedron::Create(vector<Vector3> *vertices,
 }
 
 
+//bool cTetrahedron::operator==(const cTetrahedron &rhs) const
+//{
+//	if (this != &rhs)
+//	{
+//		return ((m_tr[0] == rhs.m_tr[0]) || (m_tr[0] == rhs.m_tr[1]) || (m_tr[0] == rhs.m_tr[2]) || (m_tr[0] == rhs.m_tr[3])) &&
+//			((m_tr[1] == rhs.m_tr[0]) || (m_tr[1] == rhs.m_tr[1]) || (m_tr[1] == rhs.m_tr[2]) || (m_tr[1] == rhs.m_tr[3])) &&
+//			((m_tr[2] == rhs.m_tr[0]) || (m_tr[2] == rhs.m_tr[1]) || (m_tr[2] == rhs.m_tr[2]) || (m_tr[2] == rhs.m_tr[3])) &&
+//			((m_tr[3] == rhs.m_tr[0]) || (m_tr[3] == rhs.m_tr[1]) || (m_tr[3] == rhs.m_tr[2]) || (m_tr[3] == rhs.m_tr[3]));
+//	}
+//	return true;
+//}
+//
 bool cTetrahedron::operator==(const cTetrahedron &rhs) const
 {
 	if (this != &rhs)
 	{
-		return ((m_tr[0] == rhs.m_tr[0]) || (m_tr[0] == rhs.m_tr[1]) || (m_tr[0] == rhs.m_tr[2]) || (m_tr[0] == rhs.m_tr[3])) &&
-			((m_tr[1] == rhs.m_tr[0]) || (m_tr[1] == rhs.m_tr[1]) || (m_tr[1] == rhs.m_tr[2]) || (m_tr[1] == rhs.m_tr[3])) &&
-			((m_tr[2] == rhs.m_tr[0]) || (m_tr[2] == rhs.m_tr[1]) || (m_tr[2] == rhs.m_tr[2]) || (m_tr[2] == rhs.m_tr[3])) &&
-			((m_tr[3] == rhs.m_tr[0]) || (m_tr[3] == rhs.m_tr[1]) || (m_tr[3] == rhs.m_tr[2]) || (m_tr[3] == rhs.m_tr[3]));
+		return 
+			((m_indices[0] == rhs.m_indices[0]) || (m_indices[0] == rhs.m_indices[1]) || (m_indices[0] == rhs.m_indices[2]) || (m_indices[0] == rhs.m_indices[3])) &&
+			((m_indices[1] == rhs.m_indices[0]) || (m_indices[1] == rhs.m_indices[1]) || (m_indices[1] == rhs.m_indices[2]) || (m_indices[1] == rhs.m_indices[3])) &&
+			((m_indices[2] == rhs.m_indices[0]) || (m_indices[2] == rhs.m_indices[1]) || (m_indices[2] == rhs.m_indices[2]) || (m_indices[2] == rhs.m_indices[3])) &&
+			((m_indices[3] == rhs.m_indices[0]) || (m_indices[3] == rhs.m_indices[1]) || (m_indices[3] == rhs.m_indices[2]) || (m_indices[3] == rhs.m_indices[3]));
 	}
 	return true;
 }

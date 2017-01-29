@@ -322,6 +322,7 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_LBUTTONDOWN:
 	{
+		SetCapture(m_hWnd);
 		m_LButtonDown = true;
 		m_curPos.x = LOWORD(lParam);
 		m_curPos.y = HIWORD(lParam);
@@ -329,11 +330,13 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 
 	case WM_LBUTTONUP:
+		ReleaseCapture();
 		m_LButtonDown = false;
 		break;
 
 	case WM_RBUTTONDOWN:
 	{
+		SetCapture(m_hWnd);
 		m_RButtonDown = true;
 		m_curPos.x = LOWORD(lParam);
 		m_curPos.y = HIWORD(lParam);
@@ -341,6 +344,7 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 
 	case WM_RBUTTONUP:
+		ReleaseCapture();
 		m_RButtonDown = false;
 		break;
 
