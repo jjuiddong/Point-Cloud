@@ -149,6 +149,7 @@
     <ClCompile Include="GeomPredicates.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RenderTetrahedron.cpp" />
+    <ClCompile Include="RenderTriangle.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -161,6 +162,7 @@
     <ClInclude Include="Delaunay3D.h" />
     <ClInclude Include="GeomPredicates.h" />
     <ClInclude Include="RenderTetrahedron.h" />
+    <ClInclude Include="RenderTriangle.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Tetrahedron.h" />
     <ClInclude Include="triangle3.h" />

@@ -28,6 +28,7 @@ void cTriangle::Create(vector<Vector3> *vertices,
 	const Vector3 a = (p1 - center).Normal();
 	const Vector3 b = (p2 - center).Normal();
 	const Vector3 c = (p3 - center).Normal();
+	m_center = center;
 
 	const Vector3 v = (frontPoint - center).Normal();
 	if (a.CrossProduct(b).Normal().DotProduct(v) > 0)
@@ -47,16 +48,46 @@ void cTriangle::Create(vector<Vector3> *vertices,
 }
 
 
+//bool cTriangle::operator==(const cTriangle &rhs) const
+//{
+//	if (this != &rhs)
+//	{
+//		return	((*m_vertices)[ m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[0]] || 
+//				(*m_vertices)[m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[2]]) &&
+//			((*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[0]] ||
+//				(*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[2]]) &&
+//			((*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[0]] || 
+//				(*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[2]]);
+//	}
+//	return true;
+//}
 bool cTriangle::operator==(const cTriangle &rhs) const
 {
 	if (this != &rhs)
 	{
-		return	((*m_vertices)[ m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[0]] || 
-				(*m_vertices)[m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[0]] == (*rhs.m_vertices)[ rhs.m_indices[2]]) &&
-			((*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[0]] ||
-				(*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[1]] == (*rhs.m_vertices)[ rhs.m_indices[2]]) &&
-			((*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[0]] || 
-				(*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[1]] || (*m_vertices)[m_indices[2]] == (*rhs.m_vertices)[ rhs.m_indices[2]]);
+		return	
+			((m_indices[0] == rhs.m_indices[0]) || (m_indices[0] == rhs.m_indices[1]) || (m_indices[0] == rhs.m_indices[2])) &&
+			((m_indices[1] == rhs.m_indices[0]) || (m_indices[1] == rhs.m_indices[1]) || (m_indices[1] == rhs.m_indices[2])) &&
+			((m_indices[2] == rhs.m_indices[0]) || (m_indices[2] == rhs.m_indices[1]) || (m_indices[2] == rhs.m_indices[2]));
 	}
+	return true;
+}
+
+
+// Lay to Target Triangle
+// If lay projection target triangle, return true
+bool cTriangle::Projection(const cTriangle &target)
+{
+	common::Triangle tri(
+		(*m_vertices)[target.m_indices[0]],
+		(*m_vertices)[target.m_indices[1]],
+		(*m_vertices)[target.m_indices[2]] );
+
+	float pfT, pfU, pfV;
+	if (!tri.Intersect(m_center, m_normal, &pfT, &pfU, &pfV))
+		return false;
+	if (pfT < 0)
+		return false;
+
 	return true;
 }

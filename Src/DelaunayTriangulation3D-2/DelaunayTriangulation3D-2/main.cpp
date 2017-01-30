@@ -6,6 +6,7 @@
 #include "stdafx.h"
 #include "Delaunay3D.h"
 #include "RenderTetrahedron.h"
+#include "RenderTriangle.h"
 
 using namespace graphic;
 
@@ -30,21 +31,29 @@ private:
 	vector<Vector3> m_points;
 	delaunay3d::cDelaunay3D m_delaunay;
 	vector<delaunay3d::cRenderTetrahedron*> m_renderTetrahedrones;
+	vector<delaunay3d::cRenderTriangle*> m_renderTriangle;
 	
 	delaunay3d::cTetrahedron m_tetra;
 	delaunay3d::cRenderTetrahedron m_renderTetra;
 	
 	graphic::cVertexBuffer m_pointVtxBuff;
 
-	// point cloud 로 덩어리를 만든 버퍼
+	// point cloud mesh
 	graphic::cVertexBuffer m_cloudVtxBuff;
 	graphic::cIndexBuffer m_cloudIdxBuff;
+
+	// optimize point cloud mesh (remove internal triangle)
+	graphic::cVertexBuffer m_optVtxBuff;
+	graphic::cIndexBuffer m_optIdxBuff;
+
 
 	bool m_isRenderVertex;
 	bool m_isRenderTerahedron;
 	bool m_isRenderCloudMesh;
 	bool m_isRenderNormal;
 	bool m_isRenderEdge;
+	bool m_isRenderOptimize;
+	bool m_isRenderOptimizeTriangle;
 	int m_renderIdx;
 
 	POINT m_curPos;
@@ -66,6 +75,8 @@ cViewer::cViewer()
 	, m_isRenderCloudMesh(false)
 	, m_isRenderNormal(false)
 	, m_isRenderEdge(true)
+	, m_isRenderOptimize(false)
+	, m_isRenderOptimizeTriangle(false)
 	, m_renderIdx(0)
 {
 	m_windowName = L"Delaunay Triangulations 3D Indexed";
@@ -81,6 +92,11 @@ cViewer::~cViewer()
 	for (auto &p : m_renderTetrahedrones)
 		delete p;
 	m_renderTetrahedrones.clear();
+
+	for (auto &p : m_renderTriangle)
+		delete p;
+	m_renderTriangle.clear();
+
 
 	graphic::ReleaseRenderer();
 }
@@ -114,14 +130,15 @@ bool cViewer::OnInit()
 
 void cViewer::UpdateDelaunayTriangles()
 {
-	srand((unsigned int)time(NULL));
-	int numberPoints = (int)roundf(RandomFloat(8, 8));
+	//srand((unsigned int)time(NULL));
+	const int numberPoints = (int)roundf(RandomFloat(8, 8));
 
 	m_points.clear();
 	for (int i = 0; i < numberPoints; i++)
 		m_points.push_back(Vector3(RandomFloat(-10, 10), RandomFloat(-10, 10), RandomFloat(-10, 10)));
 
 	m_delaunay.Triangulate(m_points);
+	m_delaunay.OptimizeTriangle();
 
 	// Vertex List
 	m_pointVtxBuff.Create(m_renderer, numberPoints, sizeof(graphic::sVertexPoint), graphic::sVertexPoint::FVF);
@@ -184,6 +201,53 @@ void cViewer::UpdateDelaunayTriangles()
 		m_cloudIdxBuff.Unlock();
 	}
 
+
+	//---------------------------------------------------------------------------------------------------------
+	// Create Optimize Point Cloud Mesh
+	m_optVtxBuff.Create(m_renderer,
+		m_delaunay.m_tri.size() * 3,
+		sizeof(graphic::sVertexNormDiffuse), graphic::sVertexNormDiffuse::FVF);
+
+	m_optIdxBuff.Create(m_renderer, m_delaunay.m_tri.size() * 3);
+
+	if (graphic::sVertexNormDiffuse *p = (graphic::sVertexNormDiffuse*)m_optVtxBuff.Lock())
+	{
+		if (unsigned short *ip = (unsigned short*)m_optIdxBuff.Lock())
+		{
+			int idx = 0;
+			for (auto &tri : m_delaunay.m_tri)
+			{
+				for (int k = 0; k < 3; ++k) // Triangle Vertex
+				{
+					// Initialize Vertex Buffer
+					p->p = (*tri.m_vertices)[tri.m_indices[k]];
+					p->c = D3DXCOLOR(1, 1, 1, 0);
+					p++->n = tri.m_normal;
+
+					// Initialize Index Buffer
+					*ip++ = idx++;
+				}
+			}
+		}
+
+		m_optVtxBuff.Unlock();
+		m_optIdxBuff.Unlock();
+	}
+
+	// Create Rendering Triangle
+	for (auto &p : m_renderTriangle)
+		delete p;
+	m_renderTriangle.clear();
+
+	for (auto &tri : m_delaunay.m_tri)
+	{
+		delaunay3d::cRenderTriangle *p = new delaunay3d::cRenderTriangle();
+		p->Init(m_renderer, tri);
+		m_renderTriangle.push_back(p);
+	}
+
+
+	common::dbg::Log("Optimize triangle count = %d\n", m_delaunay.m_tri.size());
 	common::dbg::Log("Tetrahedron count = %d\n", m_delaunay.m_tetrahedrones.size());
 }
 
@@ -233,7 +297,20 @@ void cViewer::OnRender(const float elapseT)
 		}
 		else
 		{
-			if (m_isRenderCloudMesh)
+			if (m_isRenderOptimize)
+			{
+				m_renderer.GetDevice()->SetTransform(D3DTS_WORLD, (D3DXMATRIX*)&m_rot);
+				m_optVtxBuff.Bind(m_renderer);
+				m_optIdxBuff.Bind(m_renderer);
+				m_renderer.GetDevice()->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0,
+					m_optVtxBuff.GetVertexCount(), 0, m_optIdxBuff.GetFaceCount());
+			}
+			else if (m_isRenderOptimizeTriangle)
+			{
+				for (auto tri : m_renderTriangle)
+					tri->Render(m_renderer, m_rot);
+			}
+			else if (m_isRenderCloudMesh)
 			{
 				m_renderer.GetDevice()->SetTransform(D3DTS_WORLD, (D3DXMATRIX*)&m_rot);
 				m_cloudVtxBuff.Bind(m_renderer);
@@ -304,6 +381,7 @@ void cViewer::OnMessageProc(UINT message, WPARAM wParam, LPARAM lParam)
 		case '3': m_isRenderNormal = !m_isRenderNormal; break;
 		case '4': m_isRenderEdge = !m_isRenderEdge; break;
 		case '5': m_isRenderCloudMesh = !m_isRenderCloudMesh; break;
+		case '6': m_isRenderOptimize = !m_isRenderOptimize; break;
 			break;
 
 		case VK_LEFT:

@@ -9,6 +9,7 @@
     <ClCompile Include="triangle3.cpp" />
     <ClCompile Include="CircumCenter.cpp" />
     <ClCompile Include="Delaunay3D.cpp" />
+    <ClCompile Include="RenderTriangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeomPredicates.h" />
@@ -18,5 +19,6 @@
     <ClInclude Include="triangle3.h" />
     <ClInclude Include="CircumCenter.h" />
     <ClInclude Include="Delaunay3D.h" />
+    <ClInclude Include="RenderTriangle.h" />
   </ItemGroup>
 </Project>

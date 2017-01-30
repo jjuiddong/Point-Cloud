@@ -96,3 +96,40 @@ void cDelaunay3D::Triangulate(std::vector<Vector3> &vertices)
 	}
 }
 
+
+// Remove Internal Triangle
+void cDelaunay3D::OptimizeTriangle()
+{
+	// create all triangle
+	m_tri.clear();
+	for (auto tet : m_tetrahedrones)
+		for (int i = 0; i < 4; ++i)
+			m_tri.push_back(tet.m_tr[i]);
+
+	if (m_tri[0].Projection(m_tri[3]))
+	{
+		int a = 0;
+	}
+
+
+	// remove internal triangle
+	vector<int> rmIndices;
+	for (u_int i = 0; i < m_tri.size(); ++i)
+	{
+		for (u_int k = 0; k < m_tri.size(); ++k)
+		{
+			if (i == k)
+				continue;
+
+			if (m_tri[i].Projection(m_tri[k]))
+			{
+				rmIndices.push_back(i);
+				break;
+			}
+		}
+	}
+
+	for (int i=(int)rmIndices.size()-1; i >= 0; --i)
+		common::popvector(m_tri, rmIndices[i]);
+
+}
